@@ -1,0 +1,1 @@
+This repository contains a prototype system developed for the study Enhancing LLM Responses Through Instructional Design Theory. It applies the ADDIE model to design a personalized AI tutor using a chatbot interface, evaluated in an HCI research context.

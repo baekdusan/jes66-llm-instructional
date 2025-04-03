@@ -34,6 +34,15 @@ class Database:
             )
         ''')
         
+        # ADDIE 문서 테이블 생성
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS addie_document (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
         conn.commit()
         conn.close()
 
@@ -100,4 +109,26 @@ class Database:
         c.execute('DELETE FROM messages WHERE conversation_id = ?', (conversation_id,))
         c.execute('DELETE FROM conversations WHERE id = ?', (conversation_id,))
         conn.commit()
-        conn.close() 
+        conn.close()
+
+    def save_addie_document(self, content):
+        """ADDIE 문서 저장"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        # 기존 문서 삭제
+        c.execute('DELETE FROM addie_document')
+        
+        # 새 문서 저장
+        c.execute('INSERT INTO addie_document (content) VALUES (?)', (content,))
+        conn.commit()
+        conn.close()
+
+    def get_addie_document(self):
+        """ADDIE 문서 조회"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('SELECT content FROM addie_document ORDER BY id DESC LIMIT 1')
+        result = c.fetchone()
+        conn.close()
+        return result[0] if result else None 

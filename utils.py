@@ -33,7 +33,7 @@ def render_with_latex(text: str):
     # block 수식 먼저 분리
     block_pattern = r"\\\[(.*?)\\\]"
     blocks = re.split(block_pattern, text, flags=re.DOTALL)
-    print(blocks)
+    # print(blocks)
 
     for i, part in enumerate(blocks):
         if i % 2 == 0:

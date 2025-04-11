@@ -77,7 +77,7 @@ if st.session_state.messages and st.session_state.system_prompt_created:
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             if msg["role"] == "assistant":
-                render_with_latex(msg["content"])
+                st.markdown(render_with_latex(msg["content"]))
             else:
                 st.markdown(msg["content"])
 
@@ -268,12 +268,11 @@ if user_input:
                     if chunk.choices and chunk.choices[0].delta.content:
                         content = chunk.choices[0].delta.content
                         full_response += content
-                        stream_placeholder.markdown(full_response + "▌")
+                        stream_placeholder.markdown(render_with_latex(full_response + "▌"))
 
-                # 스트리밍 끝난 후 수식 포함해서 다시 렌더링
+                # 스트리밍 도중에도 마크다운으로 계속 갱신 (수식 포함)
                 stream_placeholder.empty()
-                render_with_latex(full_response)
-
+                st.markdown(render_with_latex(full_response))
                 # 응답 저장
                 st.session_state.messages.append(
                     {"role": "assistant", "content": full_response}

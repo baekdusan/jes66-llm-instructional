@@ -2,26 +2,26 @@ import streamlit as st
 
 # 공통 주의사항
 COMMON_INSTRUCTIONS = """
-주의사항:
-1. 반드시 [분석 단계]와 [설계 단계] 두 섹션을 모두 포함해야 합니다.
-2. 각 섹션은 위의 형식을 정확히 따라야 합니다.
-3. 내용을 생략하거나 수정하지 마세요.
-4. 한국어로 작성해주세요.
-5. JSON 형식을 정확히 지켜주세요.
+Important Notes:
+1. You must include both [Analysis Stage] and [Design Stage] sections.
+2. Each section must follow the format above.
+3. Do not omit or modify the content.
+4. Please follow the JSON format exactly.
 """
 
 # 참조 문서가 있는 경우의 프롬프트
 for_system_prompt_with_reference = """
-참조 문서를 통해 다음 사용자 요구를 해결하기 위한 ADDIE 모형의 '분석' 단계와 '설계' 단계에 대한 시스템 프롬프트를 생성해주세요.
+Generate a system prompt for the 'Analysis' and 'Design' stages of the ADDIE model to solve the following user request using the reference document.
 
-참조 문서: {addie_reference_content}
-사용자 요구: {user_input}
-참고할 내용: user는 산업공학 석사과정 1학년 학생이며, 주 연구 분야는 인간공학입니다.
+References: {addie_reference_content}
+User's Request: {user_input}
+User's Background: User is a first-year master's student in Industrial Engineering, and his main research field is Human Factors and Ergonomics.
+Learning Environment: The learning will take place exclusively through conversation with a chatbot.
 
-출력 형식: 다음 JSON 형식으로 응답해주세요:
+Output Format: Please respond in the following JSON format:
 {{
-    "analysis_content": "[분석 단계]",
-    "design_content": "[설계 단계]"
+    "analysis_content": "[Analysis Stage]",
+    "design_content": "[Design Stage]"
 }}
 
 {common_instructions}
@@ -29,15 +29,16 @@ for_system_prompt_with_reference = """
 
 # 참조 문서가 없는 경우의 프롬프트
 for_system_prompt_without_reference = """
-다음 사용자 요구를 해결하기 위한 ADDIE 모형의 '분석' 단계와 '설계' 단계에 대한 시스템 프롬프트를 생성해주세요.
+Generate a system prompt for the 'Analysis' and 'Design' stages of the ADDIE model to solve the following user request.
 
-사용자 요구: {user_input}
-참고할 내용: user는 산업공학 석사과정 1학년 학생이며, 주 연구 분야는 인간공학입니다.
+User's Request: {user_input}
+User's Background: User is a first-year master's student in Industrial Engineering, and his main research field is Human Factors and Ergonomics.
+Learning Environment: The learning will take place exclusively through conversation with a chatbot.
 
-출력 형식: 다음 JSON 형식으로 응답해주세요:
+Output Format: Please respond in the following JSON format:
 {{
-    "analysis_content": "[분석 단계]",
-    "design_content": "[설계 단계]"
+    "analysis_content": "[Analysis Stage]",
+    "design_content": "[Design Stage]"
 }}
 
 {common_instructions}
@@ -45,64 +46,73 @@ for_system_prompt_without_reference = """
 
 # 시스템 프롬프트
 system_prompt = """
-당신은 ADDIE 모형에 기반한 교수 설계 전문가입니다. 
-다음 분석과 설계 내용을 바탕으로 사용자의 요구에 맞는 응답을 제공해주세요.
+You are an AI tutor who uses the ADDIE model to teach users in a conversational and engaging way.
+Based on the following analysis and design, provide personalized and interactive responses.
 
-[분석 단계]
+[Analysis Stage]
 {analysis_content}
 
-[설계 단계]
+[Design Stage]
 {design_content}
 
-[개발, 실행 및 평가 단계]
-1. 교수 자료 생성: 설계된 교수전략에 맞춰 텍스트 기반의 교수 자료를 자동으로 생성합니다.
-2. 학습 진행: 생성된 교수 자료를 바탕으로 user와 대화를 통해 학습을 진행합니다.
-3. 피드백 제공: 학습자의 이해도에 따라 적절한 피드백과 평가를 제공합니다.
+[Teaching Guidelines]
+1. Start with a friendly greeting and ask about the user's prior knowledge
+2. Use a conversational tone throughout the interaction
+3. Break down complex concepts into digestible parts
+4. Encourage active participation through questions and discussions
+5. Provide real-world examples and analogies
+6. Adapt the pace and depth based on user's responses
+7. Use visual aids and formatting to enhance understanding
+8. Regularly check for understanding and provide feedback
 
-각 응답은 다음 형식을 따르세요:
-- 마크다운 형식으로 작성
-- 필요한 경우 LaTeX 수식 사용 (\(...\) 또는 \[...\] 형식)
-- 구체적이고 실용적인 예시 포함
-- 단계별로 명확하게 구분하여 제시
-- 학습자의 이해도에 따른 적절한 피드백 제공
+[Response Format]
+- Write in a natural, conversational style
+- Use markdown for formatting
+- Include LaTeX for mathematical expressions when needed
+- Break down information into smaller, manageable chunks
+- End each response with a question or prompt for user engagement
 
-※ 학습자 피드백에 따라 일부 단계가 보완되거나 수정될 수 있습니다. 새로운 지시가 입력될 경우 이를 반영하여 진행 방향을 조정하세요.
+[Feedback Integration]
+- Monitor user's understanding and interest level
+- Adjust content and approach based on user's responses
+- Provide constructive feedback and encouragement
+- Suggest related topics or deeper exploration when appropriate
 """
 
 # 이전 프롬프트
 """
-[분석 단계]
-1. 학습자 분석: 인간공학을 전공하는 석사과정 1학기 학생
-2. 환경 분석: LLM 기반의 챗봇 플랫폼
-3. 요구 분석: 사용자의 쿼리 "{user_input}"에 기반하여 해결해야 할 학습 필요를 정의
-4. 직무 및 과제 분석: 위 학습 요구를 해결하기 위한 학습 과제를 LLM 기반 챗봇으로 수행
+[Analysis Stage]
+1. User Analysis: A first-year master's student majoring in Human Factors and Ergonomics
+2. Environment Analysis: LLM-based chatbot platform
+3. Requirement Analysis: Define the learning need based on the user's query "{user_input}"
+4. Job and Task Analysis: Perform the learning task based on the above learning need using an LLM-based chatbot
 
 [설계 단계]
-1. 수행목표: [사용자 쿼리를 바탕으로 구체적인 학습 목표 작성]
-2. 평가도구: [학습 목표 달성 여부를 확인할 수 있는 평가 방법 제시]
-3. 구조화: [학습 내용의 논리적 구조와 순서 제시]
-4. 교수 전략 및 매체 선정: [챗봇 환경에서 효과적인 학습을 위한 교수 방법과 적절한 매체 활용 방안 제시]
+1. Task Goal: [Write specific learning goals based on the user's query]
+2. Evaluation Tools: [Provide methods to check if the learning goals are met]
+3. Structuring: [Provide the logical structure and order of the learning content]
+4. Selection of Teaching Strategies and Media: [Provide teaching methods and appropriate media for effective learning in the chatbot environment]
 """
 
 # 피드백 분석 프롬프트
 feedback_analysis_prompt = """
-사용자의 피드백을 분석하여 현재 학습 상황을 평가해주세요.
+Analyze the user's feedback and current learning context to provide a more engaging and personalized learning experience.
 
-현재 학습 맥락: {current_context}
+Current Learning Context: {current_context}
 
-사용자 피드백: {user_feedback}
+User Feedback: {user_feedback}
 
-다음 JSON 형식으로 응답해주세요:
+Please respond in the following JSON format:
 {{
-    "status": "진행" 또는 "평가",
-    "reason": "상태 판단 이유",
-    "feedback_type": "속도 조절" 또는 "예시 요청" 또는 "기타",
-    "suggested_adjustment": "추가적인 분석과 설계가 필요한 경우, 새로운 분석과 설계 내용"
+    "status": "progress" or "evaluation",
+    "reason": "detailed reason for the status determination",
+    "suggested_adjustment": "following the reason, provide the suggested adjustment for the analysis and design content"
 }}
 
-주의사항:
-1. 현재 학습 맥락과 사용자 피드백을 모두 고려하여 판단하세요.
-2. "진행" 상태는 현재 학습이 정상적으로 진행 중일 때입니다.
-3. "평가" 상태는 학습 속도, 예시, 설명 방식 등에 대한 피드백이 있을 때입니다.
-4. 새로운 분석과 설계가 필요한 경우에만 suggested_adjustment를 포함하세요.
+Important Notes:
+1. Consider both the current learning context and the user's feedback holistically
+2. "progress" means normal learning progression
+3. "evaluation" indicates need for change in the analysis and design content
+4. Include specific suggestions for improvement in suggested_adjustment
+5. Consider the user's engagement level when making recommendations
 """

@@ -58,7 +58,7 @@ if not db.get_addie_document():
 
 # Streamlit 기본 설정
 st.set_page_config(page_title="Dusan Baek", page_icon="🧑‍🏫")
-st.title("Chatbot service by Instructional Design Theory")
+st.title("🧑‍🏫 AI Tutor")
 
 # 사이드바 렌더링
 render_sidebar()
@@ -76,7 +76,12 @@ client = OpenAI(api_key=api_key)
 if st.session_state.messages and st.session_state.system_prompt_created:
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
-            if msg["role"] == "assistant":
+            if msg["role"] == "system":
+                if msg["content"] == "REFRESH":
+                    continue  # REFRESH 메시지는 표시하지 않음
+                with st.expander("시스템 프롬프트 보기"):
+                    st.markdown(render_with_latex(msg["content"]))
+            elif msg["role"] == "assistant":
                 st.markdown(render_with_latex(msg["content"]))
             else:
                 st.markdown(msg["content"])
@@ -132,15 +137,13 @@ if user_input:
                     addie_reference_content=addie_reference_content,
                     common_instructions=COMMON_INSTRUCTIONS
                 )
-                # st.write("참조 문서를 사용하여 프롬프트 생성")
+                
             else:
                 prompt = for_system_prompt_without_reference.format(
                     user_input=user_input,
                     common_instructions=COMMON_INSTRUCTIONS
                 )
-                # st.write("참조 문서 없이 프롬프트 생성")
-            
-            # st.write("생성된 프롬프트:", prompt)
+        
             
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -152,7 +155,6 @@ if user_input:
             try:
                 # JSON 응답 파싱
                 content = response.choices[0].message.content
-                # st.write("모델 응답:", content)
                 
                 # 마크다운 코드 블록 표시 제거
                 content = content.replace("```json", "").replace("```", "").strip()
@@ -161,7 +163,6 @@ if user_input:
                 content = " ".join(line.strip() for line in content.splitlines())
                 
                 result = json.loads(content)
-                st.write("파싱된 JSON:", result)
                 
                 # 시스템 프롬프트 생성
                 system_prompt_content = system_prompt.format(
@@ -212,11 +213,11 @@ if user_input:
                         if chunk.choices and chunk.choices[0].delta.content:
                             content = chunk.choices[0].delta.content
                             full_response += content
-                            stream_placeholder.markdown(full_response + "▌")
+                            stream_placeholder.markdown(render_with_latex(full_response + "▌"))
 
                     # 스트리밍 끝난 후 수식 포함해서 다시 렌더링
                     stream_placeholder.empty()
-                    render_with_latex(full_response)
+                    st.markdown(render_with_latex(full_response))
 
                     # 응답 저장
                     st.session_state.messages.append(
@@ -224,33 +225,62 @@ if user_input:
                     )
                     db.save_message(st.session_state.current_conversation_id, "assistant", full_response)
                     
+                    # 화면 갱신을 위한 임시 메시지 추가
+                    st.session_state.messages.append({"role": "system", "content": "REFRESH"})
+                    st.rerun()
+                    
                 except Exception as e:
                     st.error(f"응답 생성 중 오류가 발생했습니다: {str(e)}")
                     st.info("잠시 후 다시 시도해주세요.")
                     st.stop()
     else:
+
+        with st.chat_message("user"):
+            st.markdown(user_input)
+            # 사용자 메시지 추가
+            st.session_state.messages.append({"role": "user", "content": user_input})
+            db.save_message(st.session_state.current_conversation_id, "user", user_input)
+        
         # 두 번째 메시지부터는 피드백 분석
         # 이전 메시지가 3개 미만인 경우는 있는 만큼만 사용
         context_messages = st.session_state.messages[-3:] if len(st.session_state.messages) >= 3 else st.session_state.messages
         current_context = "\n".join([msg["content"] for msg in context_messages])
         
         feedback_analysis = analyze_feedback(current_context, user_input)
+        print(f"[FEEDBACK ANALYSIS] {feedback_analysis}")  # 피드백 분석 결과 로그
+        # 피드백이 "평가" 상태인 경우 새로운 분석과 설계 반영
+        if feedback_analysis["status"] == "evaluation" and "suggested_adjustment" in feedback_analysis:
+            print("[FEEDBACK] evaluation detected, updating system prompt...")  # 분류 로그
+            # 기존 system 메시지 찾기 (가장 첫 번째 system 메시지)
+            for idx, msg in enumerate(st.session_state.messages):
+                if msg["role"] == "system" and msg["content"] != "REFRESH":
+                    system_idx = idx
+                    break
+            else:
+                system_idx = None
+            
+            if system_idx is not None:
+                # 기존 system prompt에 피드백 내용을 줄 단위 불릿포인트로 추가
+                old_prompt = st.session_state.messages[system_idx]["content"]
+                adjustment = feedback_analysis["suggested_adjustment"]
+                feedback_lines = [line.strip() for line in str(adjustment).splitlines() if line.strip()]
+                feedback_text = "\n" + "\n".join(f"- {line}" for line in feedback_lines)
+                new_system_prompt = old_prompt.rstrip() + feedback_text
+                st.session_state.messages[system_idx]["content"] = new_system_prompt
+                print(f"[SYSTEM PROMPT UPDATED] {new_system_prompt}")  # system prompt 업데이트 로그
+                # 업데이트된 system prompt와 메시지로 assistant 답변 생성
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=st.session_state.messages,
+                    stream=False
+                )
+                full_response = response.choices[0].message.content
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+                db.save_message(st.session_state.current_conversation_id, "assistant", full_response)
+                print(f"[LLM RESPONSE] {full_response}")
+            st.write("Feedback applied. Please wait for the new response.")
+            # st.rerun()
         
-        # 피드백이 "평가" 상태인 경우 새로운 분석과 설계 추가
-        print(feedback_analysis["status"], feedback_analysis["suggested_adjustment"])
-        if feedback_analysis["status"] == "평가" and "suggested_adjustment" in feedback_analysis:
-            # 새로운 분석과 설계를 메시지에 추가 (사용자에게는 보이지 않음)
-            st.session_state.messages.append({
-                "role": "system",
-                "content": feedback_analysis["suggested_adjustment"]
-            })
-        
-        # 사용자 메시지 추가
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        db.save_message(st.session_state.current_conversation_id, "user", user_input)
-        
-        with st.chat_message("user"):
-            st.markdown(user_input)
 
         with st.chat_message("assistant"):
             stream_placeholder = st.empty()

@@ -9,6 +9,37 @@ Important Notes:
 4. Please follow the JSON format exactly.
 """
 
+# 의도 분류 프롬프트
+INTENT_CLASSIFICATION_PROMPT = """
+Classify the intent of the following user input.
+
+User Input: {user_input}
+
+Please classify into one of the following 5 types:
+
+1. **Information Retrieval**: Requests for existing facts or information
+   Examples: "Women's World Cup schedule", "Unemployment rate statistics by country"
+
+2. **Problem Solving**: Mathematical, logical operations or transformations
+   Examples: "Interest rate comparison", "Distance between point and line calculation", "Chinese to English translation"
+
+3. **Learning**: Requests aimed at understanding concepts or phenomena
+   Examples: "Explain the difference between GPT-3 and GPT-4", "Explain non-Newtonian fluids", "Learn about structural system types"
+
+4. **Content Creation**: Writing or editing requests for specific purposes
+   Examples: "Write an introduction about geothermal energy", "Edit report sentences", "Change poem to different format"
+
+5. **Leisure**: Leisure activities or intimate conversations with AI
+   Examples: "Ask about AI's sexual orientation", "Listen to romantic stories", "Play games, flirt"
+
+Response Format: JSON
+{{
+    "intent": "Information Retrieval|Problem Solving|Learning|Content Creation|Leisure",
+    "confidence": 0.0-1.0,
+    "reason": "Classification reason (one sentence)"
+}}
+"""
+
 # 참조 문서가 있는 경우의 프롬프트
 for_system_prompt_with_reference = """
 Generate a system prompt for the 'Analysis' and 'Design' stages of the ADDIE model to solve the following user request using the reference document.

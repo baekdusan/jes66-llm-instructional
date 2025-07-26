@@ -48,6 +48,8 @@ def render_sidebar():
                     st.session_state.messages = []
                     st.session_state.system_prompt_created = False
                     st.session_state.current_conversation_id = None
+                    st.session_state.conversation_mode = None
+                    st.session_state.history_loaded = False
                     st.rerun()
             
             st.divider()
@@ -67,6 +69,7 @@ def render_sidebar():
                         for role, content in db.get_messages(conv_id):
                             st.session_state.messages.append({"role": role, "content": content})
                         st.session_state.system_prompt_created = True
+                        st.session_state.history_loaded = True  # 히스토리에서 불러왔음을 표시
                         st.rerun()
                 
                 with col2:
